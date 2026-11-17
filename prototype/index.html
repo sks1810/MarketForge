@@ -1,0 +1,899 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MarketForge Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: operator console. Left rail of modules in pipeline order (Sense → Decide → Create → Deliver), one working pane. Indigo ink + kasavu gold. */
+:root{
+  --bg:#F3F4F9; --surface:#FFFFFF; --surface-2:#ECEEF6; --ink:#151933; --muted:#5A607E; --line:#DADDEA;
+  --indigo:#2F3A8F; --indigo-soft:#E3E6F8; --gold:#9C6B0A; --gold-soft:#F6ECD6;
+  --ok:#1E7A4C; --ok-soft:#DFF2E8; --warn:#A35208; --warn-soft:#FBEBD9; --risk:#B42318; --risk-soft:#FBE3E0;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1020; --surface:#161931; --surface-2:#1D2140; --ink:#E7E9F5; --muted:#9BA1C2; --line:#2A2F52;
+  --indigo:#9AA6F5; --indigo-soft:#262C58; --gold:#E2B24F; --gold-soft:#3A3020;
+  --ok:#55C994; --ok-soft:#173829; --warn:#F2A55A; --warn-soft:#3B2A17; --risk:#F37A6C; --risk-soft:#3F1F1E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1020; --surface:#161931; --surface-2:#1D2140; --ink:#E7E9F5; --muted:#9BA1C2; --line:#2A2F52;
+  --indigo:#9AA6F5; --indigo-soft:#262C58; --gold:#E2B24F; --gold-soft:#3A3020;
+  --ok:#55C994; --ok-soft:#173829; --warn:#F2A55A; --warn-soft:#3B2A17; --risk:#F37A6C; --risk-soft:#3F1F1E; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow:auto}
+.brand{display:flex;flex-direction:column;gap:2px;padding:0 8px}
+.brand b{font:700 22px/1.1 var(--f-display);letter-spacing:-.01em}
+.brand b span{color:var(--gold)}
+.brand small{color:var(--muted);font-size:12px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav .grp{font:600 11px/1 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:12px 8px 6px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink);text-decoration:none;font-weight:500}
+.nav a:hover{background:var(--surface-2)}
+.nav a[aria-current="page"]{background:var(--indigo-soft);color:var(--indigo)}
+.nav a .tag{margin-left:auto;font:600 10px/1 var(--f-mono);color:var(--muted)}
+.nav a .count{margin-left:auto;background:var(--gold);color:var(--surface);border-radius:999px;font:600 11px/1 var(--f-body);padding:3px 7px}
+.ai-pill{margin-top:auto;display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);padding:10px;border:1px solid var(--line);border-radius:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.on{background:var(--ok)} .dot.off{background:var(--warn)}
+main{padding-block:28px 48px;padding-inline:clamp(16px,3vw,40px);min-width:0}
+.head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:22px}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+h1{font:700 clamp(26px,3.2vw,34px)/1.1 var(--f-display);margin:6px 0 4px;letter-spacing:-.015em;text-wrap:balance}
+h2{font:700 18px/1.25 var(--f-display);margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:68ch}
+.shopchip{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:var(--surface)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1000px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){.g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}}
+.kpi .v{font:700 30px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.kpi .l{color:var(--muted);font-size:13px}
+.kpi.risk .v{color:var(--risk)} .kpi.over .v{color:var(--gold)}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 12px/1 var(--f-body);padding:5px 9px;border-radius:999px;white-space:nowrap}
+.chip.at_risk{background:var(--risk-soft);color:var(--risk)}
+.chip.watch{background:var(--warn-soft);color:var(--warn)}
+.chip.healthy{background:var(--ok-soft);color:var(--ok)}
+.chip.overstock{background:var(--gold-soft);color:var(--gold)}
+.chip.neutral{background:var(--surface-2);color:var(--muted)}
+.tablewrap{overflow-x:auto;margin-inline:-18px;padding-inline:18px}
+table{border-collapse:collapse;width:100%;min-width:820px;font-variant-numeric:tabular-nums}
+th{font:600 11px/1.2 var(--f-body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+.pname b{display:block;font-weight:600} .pname small{color:var(--muted);font:12px var(--f-mono)}
+input[type=number]{width:74px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);text-align:right}
+.toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--muted)}
+.toggle input{accent-color:var(--gold);width:16px;height:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--indigo);border-color:var(--indigo);color:var(--surface)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:var(--surface)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font:600 12px/1 var(--f-body);color:var(--muted)}
+select,textarea,.field input[type=text]{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
+.note{font-size:13px;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:12.5px}
+.method{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:10px 12px}
+.method b{color:var(--ink)}
+/* chat */
+.chatwrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1000px){.chatwrap{grid-template-columns:minmax(0,1fr)}}
+.chat{display:flex;flex-direction:column;height:min(640px,75vh);padding:0}
+.msgs{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:88%;padding:10px 14px;border-radius:12px;line-height:1.5;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--indigo);color:var(--surface);border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--surface-2);border-bottom-left-radius:4px}
+.msg.bot ul{margin:6px 0;padding-left:18px}
+.msg.bot p{margin:0 0 6px} .msg.bot p:last-child{margin:0}
+.msg .meta{display:block;font-size:11px;color:var(--muted);margin-top:6px}
+.composer{border-top:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:10px}
+.composer form{display:flex;gap:8px}
+.composer textarea{resize:none;height:44px}
+.suggest{display:flex;gap:6px;flex-wrap:wrap}
+.suggest button{border:1px dashed var(--line);background:transparent;border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;color:var(--muted)}
+.suggest button:hover{color:var(--indigo);border-color:var(--indigo)}
+.trace{display:flex;flex-direction:column;gap:8px;max-height:min(640px,75vh);overflow:auto}
+.step{border-left:3px solid var(--line);padding:6px 10px;font:12.5px/1.5 var(--f-mono);overflow-wrap:anywhere;white-space:pre-wrap}
+.step .k{font-weight:600;display:block;font-family:var(--f-body);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+.step.thought{border-color:var(--indigo)} .step.thought .k{color:var(--indigo)}
+.step.action{border-color:var(--gold)} .step.action .k{color:var(--gold)}
+.step.obs{border-color:var(--muted);color:var(--muted)} .step.obs .k{color:var(--muted)}
+.step.guard{border-color:var(--risk)} .step.guard .k{color:var(--risk)}
+.step.final{border-color:var(--ok)} .step.final .k{color:var(--ok)}
+.empty{color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:8px;padding:16px;text-align:center}
+/* copy */
+.variant{display:flex;flex-direction:column;gap:8px}
+.variant .cap{font-size:16px;line-height:1.45}
+.variant .hook{font-size:12px;color:var(--muted)}
+.variant .stats{font:12px var(--f-mono);color:var(--muted)}
+.variant.win{border-color:var(--ok);box-shadow:0 0 0 1px var(--ok)}
+.variant.lose{opacity:.75}
+pre.code{background:var(--surface-2);border-radius:8px;padding:12px;overflow-x:auto;font:12px/1.5 var(--f-mono);margin:0;max-height:220px}
+/* image */
+.canvases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.canvases{grid-template-columns:minmax(0,1fr)}}
+.imgcard{display:flex;flex-direction:column;gap:8px}
+.imgcard canvas{width:100%;max-width:100%;aspect-ratio:1/1;border-radius:8px;display:block;background:var(--surface-2)}
+.imgcard.best{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.bar{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--indigo)}
+.scoreline{display:grid;grid-template-columns:76px minmax(0,1fr) 38px;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.scoreline span:last-child{font-family:var(--f-mono);text-align:right;color:var(--ink)}
+/* schedule */
+.chart{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font:11px var(--f-body)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+input[type=range]{width:100%;accent-color:var(--indigo)}
+.formula{font:600 15px var(--f-mono);background:var(--surface-2);border-radius:8px;padding:12px;text-align:center;overflow-x:auto}
+/* approvals */
+.draft{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:14px;align-items:center}
+@media (max-width:600px){.draft{grid-template-columns:56px minmax(0,1fr)} .draft .acts{grid-column:1/-1}}
+.thumb{width:72px;height:72px;border-radius:8px;background:var(--surface-2);object-fit:cover;display:grid;place-items:center;color:var(--muted);font:600 11px var(--f-mono)}
+@media (max-width:600px){.thumb{width:56px;height:56px}}
+.draft p{margin:2px 0 0;overflow-wrap:anywhere}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;z-index:10;max-width:calc(100% - 32px)}
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;flex-direction:row;align-items:center;padding:10px 16px;gap:12px;border-right:0;border-bottom:1px solid var(--line);z-index:5;overflow-x:auto}
+  .brand small,.nav .grp,.nav a .tag{display:none}
+  .brand b{font-size:18px;white-space:nowrap}
+  .nav{flex-direction:row;gap:4px}
+  .nav a{white-space:nowrap;padding:7px 10px}
+  .ai-pill{margin:0;white-space:nowrap}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><b>Market<span>Forge</span></b><small>Prototype · Team 13 · MITS</small></div>
+    <nav class="nav" aria-label="Modules">
+      <div class="grp">Sense</div>
+      <a href="#overview" data-view="overview">Business reality <span class="tag">P1</span></a>
+      <div class="grp">Decide</div>
+      <a href="#agent" data-view="agent">Strategy agent <span class="tag">P2</span></a>
+      <div class="grp">Create</div>
+      <a href="#copy" data-view="copy">Ad copy studio <span class="tag">P3</span></a>
+      <a href="#image" data-view="image">Ad image studio <span class="tag">P4</span></a>
+      <div class="grp">Deliver</div>
+      <a href="#schedule" data-view="schedule">Smart scheduler <span class="tag">P5</span></a>
+      <a href="#approvals" data-view="approvals">Approvals <span class="count" id="pendCount" hidden>0</span></a>
+    </nav>
+    <div class="ai-pill" id="aiPill"><span class="dot" id="aiDot"></span><span id="aiText">Connecting to Claude…</span></div>
+  </aside>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section id="view-overview" data-v>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Sense · Business Reality Awareness</div>
+          <h1>Stock and demand, this week</h1>
+          <p class="sub">Daily sales history is turned into a 7-day demand forecast with a P50 to P90 range. Products whose worst-case demand exceeds stock are flagged before anyone promotes them.</p>
+        </div>
+        <span class="shopchip">Sample shop: Thrissur Weaves · 56 days of example sales</span>
+      </div>
+      <div class="grid g4" id="kpis"></div>
+      <div class="panel" style="margin-top:16px">
+        <div class="row" style="justify-content:space-between;margin-bottom:10px">
+          <h2>Products</h2>
+          <span class="note">Edit stock or plan a promo to see the forecast react.</span>
+        </div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Product</th><th>Last 4 weeks → next 7 days</th><th class="num">Stock</th><th class="num">P50 / wk</th><th class="num">P90 / wk</th><th class="num">Days of cover</th><th>Promo next week</th><th>Status</th></tr></thead>
+          <tbody id="prodRows"></tbody>
+        </table></div>
+      </div>
+      <div class="method" style="margin-top:16px"><b>Model</b><span>Prototype forecaster: same-weekday averages over 4 weeks, adjusted for recent trend and planned promotions (a known-future input), with quantile bands. The full build replaces this with a Temporal Fusion Transformer served from a FastAPI service. Status rule: at risk when P90 weekly demand exceeds stock; overstock above 60 days of cover.</span></div>
+    </section>
+
+    <!-- AGENT -->
+    <section id="view-agent" data-v hidden>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Decide · ReAct strategy agent</div>
+          <h1>Ask the strategist</h1>
+          <p class="sub">The agent reasons, calls tools on live shop data, reads the results and repeats. It must check stock risk before proposing any promotion, and every post it drafts waits for your approval.</p>
+        </div>
+      </div>
+      <div class="chatwrap">
+        <div class="panel chat">
+          <div class="msgs" id="msgs"></div>
+          <div class="composer">
+            <div class="suggest" id="suggest"></div>
+            <form id="chatForm">
+              <textarea id="chatIn" placeholder="e.g. Plan a weekend sale for our kurtas" aria-label="Message"></textarea>
+              <button class="btn primary" id="sendBtn" type="submit">Send</button>
+              <button class="btn" id="stopBtn" type="button" hidden>Stop</button>
+            </form>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="row" style="justify-content:space-between;margin-bottom:12px">
+            <h2>Reasoning trace</h2>
+            <span class="note" id="traceMode"></span>
+          </div>
+          <div class="trace" id="trace"><div class="empty">Thought, Action and Observation steps appear here while the agent works.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COPY -->
+    <section id="view-copy" data-v hidden>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Create · CTR-driven ad copy</div>
+          <h1>Ad copy studio</h1>
+          <p class="sub">Captions are written from what customers actually say in reviews, steered by an aspect and a business-context tag. A/B results become winner/loser pairs, the training data for preference tuning.</p>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="panel grid" style="gap:14px">
+          <div class="grid g3" style="gap:10px">
+            <div class="field"><label for="cpProd">Product</label><select id="cpProd"></select></div>
+            <div class="field"><label for="cpAspect">Aspect (from reviews)</label><select id="cpAspect"></select></div>
+            <div class="field"><label for="cpTag">Context tag</label><select id="cpTag"><option>OVERSTOCK</option><option>LOW_STOCK</option><option>FESTIVE</option><option>EVERYDAY</option></select></div>
+          </div>
+          <div id="cpReviews" class="note"></div>
+          <div class="row"><button class="btn primary" id="cpGen">Generate 4 variants</button><span class="note" id="cpStatus"></span></div>
+        </div>
+        <div class="panel grid" style="gap:10px">
+          <div class="row" style="justify-content:space-between"><h2>Preference pairs</h2><span class="chip neutral" id="pairCount">0 pairs</span></div>
+          <p class="note" style="margin:0">Each A/B test stores the best caption as chosen and the worst as rejected. A few hundred pairs are enough to start DPO fine-tuning.</p>
+          <pre class="code" id="pairPreview">No pairs yet. Generate variants, then run an A/B test.</pre>
+        </div>
+      </div>
+      <div class="row" style="justify-content:space-between;margin:20px 0 10px"><h2>Variants</h2><button class="btn" id="cpAB" disabled>Run simulated A/B test</button></div>
+      <div class="grid g2" id="cpVariants"><div class="empty">Pick a product and generate captions.</div></div>
+    </section>
+
+    <!-- IMAGE -->
+    <section id="view-image" data-v hidden>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Create · CTR-driven ad images</div>
+          <h1>Ad image studio</h1>
+          <p class="sub">The real product stays untouched while the background changes with the campaign context. Three variants are rendered and scored for relevance and visual contrast, and the best one is kept.</p>
+        </div>
+      </div>
+      <div class="panel grid" style="gap:14px">
+        <div class="grid g4" style="gap:10px;align-items:end">
+          <div class="field"><label for="imProd">Product</label><select id="imProd"></select></div>
+          <div class="field"><label for="imCtx">Context</label><select id="imCtx"><option>FESTIVE</option><option>OVERSTOCK</option><option>LOW_STOCK</option><option>EVERYDAY</option></select></div>
+          <div class="field"><label for="imFile">Product photo (optional, cut-out PNG works best)</label><input id="imFile" type="file" accept="image/png,image/jpeg,image/webp"></div>
+          <div class="field"><button class="btn primary" id="imGen">Render 3 variants</button></div>
+        </div>
+      </div>
+      <div class="canvases" id="imOut" style="margin-top:16px"></div>
+      <div class="method" style="margin-top:16px"><b>Pipeline</b><span>Prompt model picks scenes from the context → renderer composes product and background → scorer ranks them. In this prototype the scenes are drawn procedurally and scored from pixels (product/background contrast and colour) plus scene-context match. The full build uses rembg, Stable Diffusion with ControlNet, and CLIP scoring, later a reward model trained on your own clicks.</span></div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="view-schedule" data-v hidden>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Deliver · RedQueen scheduling</div>
+          <h1>Smart scheduler</h1>
+          <p class="sub">Your latest post sinks one place each time a competitor posts. RedQueen posts with an urgency proportional to how deep it has sunk. Here it races a fixed 10 am / 7 pm calendar over the same competitor activity, with the same number of posts.</p>
+        </div>
+      </div>
+      <div class="grid g3">
+        <div class="panel grid" style="gap:14px">
+          <div class="formula">u(t) = √(q/s) · r(t) · b</div>
+          <div class="field"><label for="sq">q · visibility weight: <span id="sqv"></span></label><input id="sq" type="range" min="0.2" max="4" step="0.1" value="1"></div>
+          <div class="field"><label for="ss">s · posting cost: <span id="ssv"></span></label><input id="ss" type="range" min="0.5" max="12" step="0.5" value="4"></div>
+          <div class="field"><label for="sb">b · business context</label>
+            <select id="sb"><option value="1.2">Overstock push (×1.2)</option><option value="1" selected>Normal (×1.0)</option><option value="0.6">Low stock, hold back (×0.6)</option></select></div>
+          <div class="row"><button class="btn primary" id="simRun">Re-run with new competitor activity</button></div>
+          <p class="note" style="margin:0">Quiet hours 11 pm to 7 am, at most 4 posts a day. Visibility is measured only while followers are awake.</p>
+        </div>
+        <div class="panel" style="grid-column:span 2;min-width:0">
+          <div class="row" style="justify-content:space-between;margin-bottom:8px"><h2>Rank of our latest post, 72 hours</h2>
+            <div class="legend"><span><i style="background:var(--gold)"></i>RedQueen</span><span><i style="background:var(--muted)"></i>Fixed calendar</span></div></div>
+          <div style="overflow-x:auto"><svg class="chart" id="simChart" viewBox="0 0 760 260" role="img" aria-label="Rank over time for both strategies"></svg></div>
+          <div class="grid g3" id="simStats" style="margin-top:12px"></div>
+        </div>
+      </div>
+      <div class="method" style="margin-top:16px"><b>Simulation</b><span>Competitor posts arrive at random, busier in the evening and quiet at night. The full build replaces the simulated rank with a visibility-decay estimate from Instagram Insights, and publishes through a BullMQ or Celery job queue backed by Redis.</span></div>
+    </section>
+
+    <!-- APPROVALS -->
+    <section id="view-approvals" data-v hidden>
+      <div class="head">
+        <div>
+          <div class="eyebrow">Human in the loop</div>
+          <h1>Approvals</h1>
+          <p class="sub">Nothing is published without the owner. Approving a draft hands it to the scheduler, which picks a posting time with the RedQueen rule.</p>
+        </div>
+        <button class="btn" id="clearDone">Clear approved and rejected</button>
+      </div>
+      <div class="grid" id="drafts" style="gap:10px"></div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ---------- utilities ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function rng(seed){ return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 2600); }
+const store = {
+  get(k, d){ try { const v = localStorage.getItem("mf." + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v){ try { localStorage.setItem("mf." + k, JSON.stringify(v)); } catch {} }
+};
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- sample shop data (example data, clearly marked) ---------- */
+const PRODUCTS = [
+  { sku:"KUR-COT-M", name:"Cotton kurta (M)", cat:"kurta", price:799, base:4.5, stock:16, color:"#F1EEE4", trim:"#2F3A8F",
+    reviews:["So soft and breathable, perfect for Thrissur heat","Comfortable all day at office","Fit is good, length slightly long","Colour stayed bright after many washes","Worth the price"] },
+  { sku:"KUR-LIN-M", name:"Linen kurta (M)", cat:"kurta", price:1199, base:3.2, stock:220, color:"#D9C9A8", trim:"#7A5A2B",
+    reviews:["Linen fabric feels premium and cool","Very comfortable in summer, light on skin","Stitching and finish are neat","Fit is relaxed, true to size","A little pricey but good value"] },
+  { sku:"SAR-KAS", name:"Kasavu saree", cat:"saree", price:3499, base:2.4, stock:38, color:"#F4EEDC", trim:"#C9971E",
+    reviews:["The kasavu border is beautiful, real zari shine","Drape is graceful and easy to pleat","Wore it for Onam, got many compliments","Fabric is crisp cotton","Finish is excellent"] },
+  { sku:"SAR-SLK", name:"Silk saree", cat:"saree", price:6999, base:0.9, stock:7, color:"#8E1F3A", trim:"#D9A93A",
+    reviews:["Rich silk with a lovely sheen","Colour is deep and exactly like the photo","Drape flows beautifully","Zari work is fine","Expensive but worth it for weddings"] },
+  { sku:"MUN-DBL", name:"Double mundu", cat:"mundu", price:899, base:3.0, stock:64, color:"#F7F4EA", trim:"#B8892A",
+    reviews:["Soft cotton, comfortable for daily wear","Border is neat and does not fade","Good length and fit","Affordable and durable","Breathable fabric"] },
+  { sku:"DUP-PRT", name:"Printed dupatta", cat:"dupatta", price:449, base:5.5, stock:340, color:"#2E6F78", trim:"#E3B24C",
+    reviews:["Bright colours, prints are lovely","Light and flowy fabric","Great value for the price","Colour faded a little after wash","Goes with many outfits"] }
+];
+const ASPECTS = { comfort:["comfort","comfortable","soft","breathable","light","cool"], fabric:["fabric","cotton","linen","silk","material","crisp"],
+  fit:["fit","size","length","relaxed"], colour:["colour","color","bright","sheen","deep","prints"], finish:["stitching","finish","border","zari","kasavu","neat"],
+  value:["price","value","worth","affordable","pricey"], drape:["drape","flow","flowy","pleat","graceful"] };
+
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+const WEEKLY = [1.3, 0.8, 0.75, 0.85, 0.9, 1.15, 1.4]; // Sun..Sat
+(function buildHistory(){
+  const r = rng(2026);
+  PRODUCTS.forEach((p, pi) => {
+    p.hist = [];
+    for (let i = 56; i >= 1; i--) {
+      const d = new Date(TODAY); d.setDate(d.getDate() - i);
+      const promo = r() < 0.08;
+      const trend = 1 + (pi === 0 ? 0.004 : pi === 1 ? -0.003 : 0) * (56 - i);
+      const lam = p.base * WEEKLY[d.getDay()] * trend * (promo ? 1.6 : 1);
+      const units = Math.max(0, Math.round(lam + (r() + r() + r() - 1.5) * Math.sqrt(lam) * 1.1));
+      p.hist.push({ date: d, units, promo });
+    }
+    const saved = store.get("stock." + p.sku); if (saved != null) p.stock = saved;
+    p.promoNext = store.get("promo." + p.sku, false);
+  });
+})();
+
+/* ---------- Paper 1 stand-in: quantile forecaster ---------- */
+function forecast(p){
+  const h = p.hist, n = h.length;
+  const base = x => x.promo ? x.units / 1.6 : x.units;
+  const last14 = h.slice(n - 14).reduce((a, x) => a + base(x), 0), prev14 = h.slice(n - 28, n - 14).reduce((a, x) => a + base(x), 0) || 1;
+  const trend = Math.min(1.25, Math.max(0.8, Math.sqrt(last14 / prev14)));
+  const uplift = p.promoNext ? 1.55 : 1;
+  const days = []; let p50 = 0, v = 0;
+  for (let j = 0; j < 7; j++) {
+    const xs = [1,2,3,4].map(w => base(h[n + j - 7 * w]));
+    const mean = xs.reduce((a, b) => a + b, 0) / 4;
+    const sd = Math.max(Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / 3), Math.sqrt(Math.max(mean, 0.5)));
+    const m = mean * trend * uplift, s = sd * uplift;
+    days.push({ p50: m, p10: Math.max(0, m - 1.28 * s), p90: m + 1.28 * s });
+    p50 += m; v += s * s;
+  }
+  const p90 = p50 + 1.28 * Math.sqrt(v);
+  const cover = p.stock / Math.max(p50 / 7, 0.01);
+  let status = "healthy";
+  if (p90 > p.stock) status = "at_risk";
+  else if (p90 * 2 > p.stock) status = "watch";
+  else if (cover > 60) status = "overstock";
+  return { sku: p.sku, stock: p.stock, p50_week: Math.round(p50), p90_week: Math.round(p90), days_of_cover: +cover.toFixed(1), status, promo_planned: p.promoNext, trend: +trend.toFixed(2), days };
+}
+const STATUS_LABEL = { at_risk:"At risk", watch:"Watch", healthy:"Healthy", overstock:"Overstock" };
+const bySku = sku => PRODUCTS.find(p => p.sku.toLowerCase() === String(sku || "").trim().toLowerCase());
+function aspectsOf(p){
+  const counts = {};
+  for (const [a, words] of Object.entries(ASPECTS)) for (const rv of p.reviews) if (words.some(w => rv.toLowerCase().includes(w))) counts[a] = (counts[a] || 0) + 1;
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([aspect, mentions]) => ({ aspect, mentions, quotes: p.reviews.filter(rv => ASPECTS[aspect].some(w => rv.toLowerCase().includes(w))).slice(0, 2) }));
+}
+const defaultTag = st => st === "at_risk" || st === "watch" ? "LOW_STOCK" : st === "overstock" ? "OVERSTOCK" : "FESTIVE";
+
+/* ---------- overview ---------- */
+function sparkline(p, f){
+  const W = 220, H = 46, hist = p.hist.slice(-28).map(x => x.units), all = hist.length + 7;
+  const max = Math.max(...hist, ...f.days.map(d => d.p90)) * 1.08 || 1;
+  const X = i => 2 + i * (W - 4) / (all - 1), Y = v => H - 3 - v / max * (H - 8);
+  const hl = hist.map((v, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+  const s0 = hist.length - 1;
+  const up = f.days.map((d, j) => `${X(s0 + 1 + j).toFixed(1)},${Y(d.p90).toFixed(1)}`), lo = f.days.map((d, j) => `${X(s0 + 1 + j).toFixed(1)},${Y(d.p10).toFixed(1)}`).reverse();
+  const band = `M${X(s0)},${Y(hist[s0])}L${up.join("L")}L${lo.join("L")}Z`;
+  const ml = `M${X(s0)},${Y(hist[s0])}` + f.days.map((d, j) => `L${X(s0 + 1 + j).toFixed(1)},${Y(d.p50).toFixed(1)}`).join("");
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+    <rect x="${X(s0)}" y="0" width="${W - X(s0)}" height="${H}" fill="var(--surface-2)"/>
+    <path d="${band}" fill="var(--gold)" fill-opacity=".22"/>
+    <path d="${hl}" fill="none" stroke="var(--indigo)" stroke-width="1.6"/>
+    <path d="${ml}" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-dasharray="3 2"/>
+    <circle cx="${X(all - 1)}" cy="${Y(f.days[6].p50)}" r="2.6" fill="var(--gold)"/></svg>`;
+}
+function renderOverview(){
+  const fs = PRODUCTS.map(p => [p, forecast(p)]);
+  const risk = fs.filter(([, f]) => f.status === "at_risk").length, over = fs.filter(([, f]) => f.status === "overstock").length;
+  const val = PRODUCTS.reduce((a, p) => a + p.stock * p.price, 0);
+  $("#kpis").innerHTML = `
+    <div class="panel kpi"><div class="v">${PRODUCTS.length}</div><div class="l">Products tracked</div></div>
+    <div class="panel kpi risk"><div class="v">${risk}</div><div class="l">At risk of selling out this week</div></div>
+    <div class="panel kpi over"><div class="v">${over}</div><div class="l">Overstocked, safe to push</div></div>
+    <div class="panel kpi"><div class="v">${inr(val)}</div><div class="l">Stock value at list price</div></div>`;
+  $("#prodRows").innerHTML = fs.map(([p, f]) => `<tr>
+    <td class="pname"><b>${esc(p.name)}</b><small>${p.sku} · ${inr(p.price)}</small></td>
+    <td>${sparkline(p, f)}</td>
+    <td class="num"><input type="number" min="0" value="${p.stock}" data-stock="${p.sku}" id="stock-${p.sku}" aria-label="Stock for ${esc(p.name)}"></td>
+    <td class="num">${f.p50_week}</td><td class="num">${f.p90_week}</td><td class="num">${f.days_of_cover}</td>
+    <td><label class="toggle"><input type="checkbox" data-promo="${p.sku}" id="promo-${p.sku}" ${p.promoNext ? "checked" : ""}> Planned</label></td>
+    <td><span class="chip ${f.status}">${STATUS_LABEL[f.status]}</span></td></tr>`).join("");
+}
+$("#prodRows").addEventListener("change", e => {
+  const s = e.target.dataset.stock, pr = e.target.dataset.promo;
+  if (s) { const p = bySku(s); p.stock = Math.max(0, parseInt(e.target.value) || 0); store.set("stock." + s, p.stock); }
+  if (pr) { const p = bySku(pr); p.promoNext = e.target.checked; store.set("promo." + pr, p.promoNext); }
+  renderOverview(); syncSelectors();
+});
+
+/* ---------- approvals ---------- */
+let drafts = store.get("drafts", []);
+function saveDrafts(){ store.set("drafts", drafts); renderDrafts(); }
+function addDraft(d){ drafts.unshift({ id: "D" + Date.now().toString(36) + Math.floor(Math.random() * 100), status: "pending", created: Date.now(), ...d }); saveDrafts(); return drafts[0].id; }
+function renderDrafts(){
+  const pend = drafts.filter(d => d.status === "pending").length;
+  $("#pendCount").hidden = !pend; $("#pendCount").textContent = pend;
+  $("#drafts").innerHTML = drafts.length ? drafts.map(d => {
+    const p = bySku(d.sku);
+    const chip = d.status === "pending" ? `<span class="chip watch">Awaiting approval</span>` : d.status === "scheduled" ? `<span class="chip healthy">Scheduled ${esc(d.when)}</span>` : `<span class="chip neutral">Rejected</span>`;
+    return `<div class="panel draft">
+      ${d.image ? `<img class="thumb" src="${d.image}" alt="Ad image for ${esc(p?.name)}">` : `<div class="thumb">${esc(d.tag || "POST")}</div>`}
+      <div style="min-width:0"><div class="row" style="gap:8px"><b>${esc(p?.name || d.sku)}</b>${chip}<span class="note">from ${esc(d.source)}</span></div>
+        <p>${esc(d.caption || "Image post")}</p></div>
+      <div class="acts">${d.status === "pending" ? `<button class="btn small primary" data-approve="${d.id}">Approve</button><button class="btn small" data-reject="${d.id}">Reject</button>` : ""}</div></div>`;
+  }).join("") : `<div class="empty">No drafts yet. Ask the strategy agent for a campaign, or send a caption or image here from the studios.</div>`;
+}
+$("#drafts").addEventListener("click", e => {
+  const a = e.target.dataset.approve, r = e.target.dataset.reject;
+  if (a) { const d = drafts.find(x => x.id === a); const t = suggestTime(d.sku); d.status = "scheduled"; d.when = t.label; saveDrafts(); toast(`Approved. Scheduled for ${t.label}`); }
+  if (r) { drafts.find(x => x.id === r).status = "rejected"; saveDrafts(); toast("Draft rejected"); }
+});
+$("#clearDone").onclick = () => { drafts = drafts.filter(d => d.status === "pending"); saveDrafts(); };
+
+/* ---------- Paper 2: ReAct agent ---------- */
+let sample = null, toolsOK = false, aiMode = "connecting";
+function setAI(mode){
+  aiMode = mode;
+  $("#aiDot").className = "dot " + (mode === "claude" ? "on" : mode === "offline" ? "off" : "");
+  $("#aiText").textContent = mode === "claude" ? "Claude connected" : mode === "offline" ? "Offline demo mode (rule-based)" : "Connecting to Claude…";
+  $("#traceMode").textContent = mode === "claude" ? (toolsOK ? "Live: Claude + page tools" : "Claude without tools: offline agent") : mode === "offline" ? "Offline agent" : "";
+}
+const trace = $("#trace");
+function traceStep(kind, text){
+  if (trace.querySelector(".empty")) trace.innerHTML = "";
+  const labels = { thought:"Thought", action:"Action", obs:"Observation", guard:"Guardrail", final:"Finish" };
+  const el = document.createElement("div"); el.className = "step " + kind;
+  el.innerHTML = `<span class="k">${labels[kind]}</span>`; el.append(text);
+  trace.append(el); trace.scrollTop = trace.scrollHeight;
+}
+const short = o => { const s = JSON.stringify(o); return s.length > 420 ? s.slice(0, 420) + "…" : s; };
+
+function toolImpls(source){
+  return {
+    list_products: () => PRODUCTS.map(p => { const f = forecast(p); return { sku: p.sku, name: p.name, category: p.cat, price_inr: p.price, stock: p.stock, status: f.status, days_of_cover: f.days_of_cover }; }),
+    get_stock_risk: ({ sku }) => { const p = bySku(sku); if (!p) throw new Error(`Unknown SKU ${sku}. Call list_products for valid SKUs.`); const f = forecast(p); delete f.days; return f; },
+    get_review_aspects: ({ sku }) => { const p = bySku(sku); if (!p) throw new Error(`Unknown SKU ${sku}.`); return aspectsOf(p).slice(0, 3); },
+    create_campaign_draft: ({ sku, context_tag, aspect, caption }) => {
+      const p = bySku(sku); if (!p) throw new Error(`Unknown SKU ${sku}.`);
+      const tag = String(context_tag || "").toUpperCase(), f = forecast(p);
+      if (f.status === "at_risk" && tag !== "LOW_STOCK") {
+        traceStep("guard", `Blocked: ${p.sku} is at risk (stock ${f.stock}, P90 ${f.p90_week}/wk). Only LOW_STOCK framing allowed.`);
+        throw new Error(`Guardrail: ${p.sku} is at risk of selling out. Do not promote it with ${tag}; use LOW_STOCK framing or choose another product.`);
+      }
+      if (!caption || String(caption).length < 10) throw new Error("caption is required (one short Instagram caption).");
+      const id = addDraft({ sku: p.sku, tag, aspect: String(aspect || ""), caption: String(caption).slice(0, 400), source });
+      return { draft_id: id, status: "pending_owner_approval" };
+    }
+  };
+}
+const TOOL_DEFS = [
+  { name:"list_products", description:"Lists every product with SKU, name, category, price in INR, current stock, stock status (at_risk, watch, healthy, overstock) and days of cover. Call first to find SKUs." },
+  { name:"get_stock_risk", description:"Returns the 7-day demand forecast for one SKU: stock, p50_week, p90_week, days_of_cover, status, promo_planned. Must be called before recommending a promotion for that SKU.",
+    inputSchema:{ type:"object", properties:{ sku:{ type:"string" } }, required:["sku"] } },
+  { name:"get_review_aspects", description:"Returns the top selling points customers mention in reviews for one SKU, with example quotes. Use to choose the aspect a caption should highlight.",
+    inputSchema:{ type:"object", properties:{ sku:{ type:"string" } }, required:["sku"] } },
+  { name:"create_campaign_draft", description:"Creates a draft social post that waits for owner approval (it does not publish). context_tag is OVERSTOCK, LOW_STOCK, FESTIVE or EVERYDAY. Rejected for at-risk SKUs unless context_tag is LOW_STOCK.",
+    inputSchema:{ type:"object", properties:{ sku:{ type:"string" }, context_tag:{ type:"string", enum:["OVERSTOCK","LOW_STOCK","FESTIVE","EVERYDAY"] }, aspect:{ type:"string" }, caption:{ type:"string", description:"One Instagram caption, under 220 characters, in English, prices in INR." } }, required:["sku","context_tag","caption"] } }
+];
+const RULES = `You are MarketForge's marketing strategist for Thrissur Weaves, a small Kerala textile shop (example data). Work in a ReAct style: briefly state your reasoning, use the tools to check live shop data, then decide.
+Rules:
+- Always call get_stock_risk for a product before recommending or drafting any promotion for it.
+- Never push an at_risk product with discounts or volume; prefer overstock or healthy products, or use gentle LOW_STOCK framing.
+- Use get_review_aspects so captions highlight what customers actually praise.
+- When the owner asks for a campaign, create at most 2 drafts with create_campaign_draft. Drafts wait for owner approval; say so.
+- Final answer: short. A one-line recommendation, then 2-4 bullets with the numbers that justify it (stock, P90 demand, days of cover). Use ₹ for prices. No tables.`;
+let turns = [];
+function md(text){
+  const lines = esc(text).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").split(/\n/);
+  let html = "", inList = false;
+  for (const l of lines) {
+    const m = l.match(/^\s*[-•*]\s+(.*)/);
+    if (m) { if (!inList) { html += "<ul>"; inList = true; } html += `<li>${m[1]}</li>`; }
+    else { if (inList) { html += "</ul>"; inList = false; } if (l.trim()) html += `<p>${l}</p>`; }
+  }
+  return html + (inList ? "</ul>" : "");
+}
+function bubble(role, text){ const el = document.createElement("div"); el.className = "msg " + role; if (role === "user") el.textContent = text; else el.innerHTML = md(text); $("#msgs").append(el); $("#msgs").scrollTop = $("#msgs").scrollHeight; return el; }
+bubble("bot", "Hi! I'm the MarketForge strategist. I check stock and demand before suggesting any campaign. Try one of the prompts below.");
+const SUGGEST = ["Plan a weekend sale for our kurtas", "Which product should we push for Diwali?", "Should we promote the silk saree this week?"];
+$("#suggest").innerHTML = SUGGEST.map(s => `<button type="button">${esc(s)}</button>`).join("");
+$("#suggest").addEventListener("click", e => { if (e.target.tagName === "BUTTON") { $("#chatIn").value = e.target.textContent; $("#chatForm").requestSubmit(); } });
+$("#chatIn").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("#chatForm").requestSubmit(); } });
+
+let ctl = null, busy = false;
+$("#stopBtn").onclick = () => ctl?.abort();
+$("#chatForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const q = $("#chatIn").value.trim(); if (!q || busy) return;
+  $("#chatIn").value = ""; bubble("user", q);
+  busy = true; $("#sendBtn").disabled = true;
+  trace.innerHTML = ""; traceStep("thought", `Task: ${q}`);
+  const out = bubble("bot", "Thinking…");
+  try {
+    if (aiMode === "claude" && toolsOK) await runClaudeAgent(q, out);
+    else await runOfflineAgent(q, out);
+  } finally { busy = false; $("#sendBtn").disabled = false; $("#stopBtn").hidden = true; }
+});
+
+async function runClaudeAgent(q, out){
+  turns.push({ role: "user", content: q });
+  if (turns.length > 10) turns = turns.slice(-10);
+  const impl = toolImpls("Strategy agent (Claude)");
+  const tools = TOOL_DEFS.map(d => ({ ...d, execute: async (input) => {
+    traceStep("action", `${d.name}(${input && Object.keys(input).length ? JSON.stringify(input) : ""})`);
+    try { const r = impl[d.name](input || {}); traceStep("obs", short(r)); return r; }
+    catch (err) { traceStep("obs", "Error: " + err.message); throw err; }
+  }}));
+  ctl = new AbortController(); $("#stopBtn").hidden = false;
+  let lastLen = 0;
+  try {
+    const res = await sample([{ role: "user", content: RULES + "\n\nShop date: " + TODAY.toDateString() }, ...turns], {
+      tools, signal: ctl.signal, modelTier: "default",
+      onText: ({ text }) => { out.innerHTML = md(text); $("#msgs").scrollTop = $("#msgs").scrollHeight; lastLen = text.length; }
+    });
+    turns.push({ role: "assistant", content: res.text });
+    traceStep("final", "Recommendation delivered. Drafts wait in Approvals.");
+  } catch (err) {
+    if (err.code === "cancelled") { out.innerHTML = md((err.text || "") + "\n\n_Stopped._"); turns.pop(); return; }
+    if (["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed","tools_unavailable"].includes(err.code)) {
+      turns.pop(); setAI("offline"); out.innerHTML = md("Claude isn't available in this view, so I'll use the offline demo agent."); await runOfflineAgent(q, bubble("bot", "Thinking…")); return;
+    }
+    turns.pop();
+    out.innerHTML = md((err.text ? err.text + "\n\n" : "") + (err.code === "rate_limited" ? "Too many requests just now. Try again in a minute." : "The request was interrupted. Send it again to retry."));
+  }
+  renderDrafts();
+}
+
+/* Offline agent: same tools, deterministic policy, so the demo works without Claude */
+async function runOfflineAgent(q, out){
+  const impl = toolImpls("Strategy agent (offline)");
+  const call = async (name, args) => { traceStep("action", `${name}(${args ? JSON.stringify(args) : ""})`); await sleep(350); try { const r = impl[name](args || {}); traceStep("obs", short(r)); return r; } catch (e) { traceStep("obs", "Error: " + e.message); return { error: e.message }; } };
+  const think = async t => { traceStep("thought", t); await sleep(300); };
+  const ql = q.toLowerCase();
+  await think("I need the product list and stock status before deciding anything.");
+  const list = await call("list_products");
+  let cands = list.filter(p => ql.includes(p.category) || ql.includes(p.name.toLowerCase().split(" ")[0]));
+  const named = cands.length > 0;
+  if (!named) cands = list;
+  await think(named ? `The owner mentioned ${[...new Set(cands.map(c => c.category))].join(", ")}. Check each candidate's stock risk.` : "No specific product named. Check stock risk across the catalogue.");
+  const risks = [];
+  for (const c of cands) risks.push({ ...c, risk: await call("get_stock_risk", { sku: c.sku }) });
+  const safe = risks.filter(r => r.risk.status !== "at_risk").sort((a, b) => b.risk.days_of_cover - a.risk.days_of_cover);
+  const blocked = risks.filter(r => r.risk.status === "at_risk");
+  if (blocked.length) await think(`${blocked.map(b => b.name).join(", ")} ${blocked.length > 1 ? "are" : "is"} at risk: P90 demand exceeds stock. I will not promote ${blocked.length > 1 ? "them" : "it"}.`);
+  let pick = safe[0];
+  if (!pick && named) { await think("Every named product is at risk. Look for a similar product with surplus instead."); const all = list.filter(p => p.status !== "at_risk").sort((a, b) => b.days_of_cover - a.days_of_cover); if (all[0]) pick = { ...all[0], risk: await call("get_stock_risk", { sku: all[0].sku }) }; }
+  if (!pick) { const msg = "Every product is at risk of selling out this week, so I don't recommend a promotion. Restock first."; traceStep("final", msg); out.innerHTML = md(msg); return; }
+  const tag = /diwali|festiv|onam|navaratri|puja/.test(ql) ? "FESTIVE" : pick.risk.status === "overstock" ? "OVERSTOCK" : "EVERYDAY";
+  await think(`${pick.name} has ${pick.risk.days_of_cover} days of cover, so it can absorb extra demand. Find what customers praise.`);
+  const asp = await call("get_review_aspects", { sku: pick.sku });
+  const a = asp[0] || { aspect: "comfort", quotes: [] };
+  const caption = templateCaption(bySku(pick.sku), a.aspect, tag, 0);
+  const d = await call("create_campaign_draft", { sku: pick.sku, context_tag: tag, aspect: a.aspect, caption });
+  const lines = [
+    `**Promote ${pick.name}** with a ${tag.toLowerCase().replace("_", " ")} campaign focused on ${a.aspect}.`,
+    `- Stock ${pick.risk.stock} against worst-case demand of ${pick.risk.p90_week} a week (${pick.risk.days_of_cover} days of cover).`,
+    ...blocked.map(b => `- Skipped ${b.name}: only ${b.risk.stock} left vs P90 demand ${b.risk.p90_week}/wk.`),
+    a.quotes?.[0] ? `- Customers say: "${a.quotes[0]}"` : "",
+    d.draft_id ? `- Draft ${d.draft_id} is waiting for your approval.` : ""
+  ].filter(Boolean).join("\n");
+  traceStep("final", `Recommend ${pick.sku}; draft ${d.draft_id || "-"} awaiting approval.`);
+  out.innerHTML = md(lines);
+}
+
+/* ---------- Paper 3: copy studio ---------- */
+function templateCaption(p, aspect, tag, i){
+  const q = (aspectsOf(p).find(x => x.aspect === aspect)?.quotes[0] || p.reviews[0]).replace(/\.$/, "");
+  const disc = Math.round(p.price * 0.8 / 10) * 10;
+  const T = {
+    OVERSTOCK: [`"${q}." Our ${p.name} is now ${inr(disc)} (was ${inr(p.price)}). Stock up this week.`, `Customers keep saying it: ${q.toLowerCase()}. ${p.name}, 20% off till Sunday.`, `Two is better than one. ${p.name} at ${inr(disc)}, because ${q.toLowerCase()}.`, `Weekend deal: ${p.name} for ${inr(disc)}. ${q}.`],
+    LOW_STOCK: [`Only a few ${p.name} pieces left. "${q}."`, `Back in demand: ${p.name}. ${q}. Limited pieces.`, `Our last few ${p.name}s. If you've been waiting, now's the time.`, `${q}. A handful left at ${inr(p.price)}.`],
+    FESTIVE: [`Festive days, ${aspect} you'll feel. Our ${p.name}: "${q}."`, `Ready for Navaratri and Diwali: ${p.name}, ${inr(p.price)}. ${q}.`, `Light the lamps in ${p.name}. Customers say ${q.toLowerCase()}.`, `This festive season, choose ${aspect}. ${p.name} from Thrissur Weaves.`],
+    EVERYDAY: [`Everyday ${aspect}: ${p.name}. "${q}."`, `${p.name}, ${inr(p.price)}. ${q}.`, `Made for Kerala days. ${p.name}: ${q.toLowerCase()}.`, `Why customers come back for our ${p.name}: ${q.toLowerCase()}.`]
+  };
+  return T[tag][i % 4];
+}
+let variants = [], pairs = store.get("pairs", []);
+function syncSelectors(){
+  const opts = PRODUCTS.map(p => `<option value="${p.sku}">${esc(p.name)} · ${STATUS_LABEL[forecast(p).status]}</option>`).join("");
+  for (const id of ["#cpProd", "#imProd"]) { const v = $(id).value; $(id).innerHTML = opts; if (v) $(id).value = v; }
+}
+function onCopyProduct(){
+  const p = bySku($("#cpProd").value), asp = aspectsOf(p);
+  $("#cpAspect").innerHTML = asp.map(a => `<option value="${a.aspect}">${a.aspect} (${a.mentions} mentions)</option>`).join("");
+  $("#cpTag").value = defaultTag(forecast(p).status);
+  $("#cpReviews").innerHTML = "Reviews: " + p.reviews.map(r => `“${esc(r)}”`).join(" · ");
+}
+$("#cpProd").addEventListener("change", onCopyProduct);
+function renderVariants(){
+  $("#cpAB").disabled = variants.length < 2;
+  $("#cpVariants").innerHTML = variants.length ? variants.map((v, i) => `<div class="panel variant ${v.result || ""}">
+      <div class="row" style="justify-content:space-between"><span class="chip neutral">${String.fromCharCode(65 + i)} · ${esc(v.tag)}</span>${v.result === "win" ? `<span class="chip healthy">Chosen</span>` : v.result === "lose" ? `<span class="chip neutral">Rejected</span>` : ""}</div>
+      <div class="cap">${esc(v.caption)}</div>${v.hook ? `<div class="hook">${esc(v.hook)}</div>` : ""}
+      ${v.clicks != null ? `<div class="stats">${v.clicks} clicks / ${v.imps.toLocaleString("en-IN")} impressions · CTR ${(v.clicks / v.imps * 100).toFixed(2)}%</div>` : ""}
+      <div><button class="btn small" data-send="${i}">Send to approvals</button></div></div>`).join("") : `<div class="empty">Pick a product and generate captions.</div>`;
+}
+$("#cpVariants").addEventListener("click", e => { const i = e.target.dataset.send; if (i != null) { const v = variants[i]; addDraft({ sku: v.sku, tag: v.tag, aspect: v.aspect, caption: v.caption, source: "Copy studio" }); toast("Sent to approvals"); } });
+$("#cpGen").onclick = async () => {
+  const p = bySku($("#cpProd").value), aspect = $("#cpAspect").value, tag = $("#cpTag").value, f = forecast(p);
+  $("#cpGen").disabled = true; $("#cpStatus").textContent = aiMode === "claude" ? "Claude is writing…" : "Writing with templates…";
+  let list = null;
+  if (aiMode === "claude") {
+    try {
+      const prompt = `Write 4 different Instagram captions for a small Kerala textile shop (Thrissur Weaves).
+Product: ${p.name}, price ${inr(p.price)}. Stock situation: ${f.status} (stock ${f.stock}, P90 demand ${f.p90_week}/week).
+Highlight this aspect: ${aspect}. Context tag: ${tag}. OVERSTOCK = push volume, may offer up to 20% off. LOW_STOCK = gentle scarcity, no discount. FESTIVE = Navaratri/Diwali season tone. EVERYDAY = plain benefit.
+Ground every caption in these real customer reviews, do not invent claims: ${p.reviews.map(r => `"${r}"`).join("; ")}.
+Each under 200 characters, no hashtags spam (max 2), INR prices. Vary the opening hook.
+Reply with only a JSON array of 4 objects: [{"caption": string, "hook": string (5-8 words naming the persuasion idea)}]`;
+      const r = await sample.json(prompt, { modelTier: "quick", cache: false });
+      if (Array.isArray(r)) list = r.filter(x => x && x.caption).slice(0, 4).map(x => ({ caption: String(x.caption), hook: String(x.hook || "") }));
+    } catch (err) { if (["not_granted","sampling_disabled","not_declared"].includes(err.code)) setAI("offline"); }
+  }
+  if (!list || !list.length) list = [0,1,2,3].map(i => ({ caption: templateCaption(p, aspect, tag, i), hook: "Template variant (offline)" }));
+  variants = list.map(v => ({ ...v, sku: p.sku, aspect, tag }));
+  $("#cpStatus").textContent = ""; $("#cpGen").disabled = false; renderVariants();
+};
+$("#cpAB").onclick = () => {
+  const r = rng(Date.now() & 0xffff);
+  variants.forEach(v => {
+    let ctr = 0.014;
+    if (v.caption.toLowerCase().includes(v.aspect)) ctr += 0.003;
+    if (/₹|\d/.test(v.caption)) ctr += 0.002;
+    if (v.caption.length >= 60 && v.caption.length <= 150) ctr += 0.002;
+    if (/"|“/.test(v.caption)) ctr += 0.0015;
+    ctr *= 0.8 + r() * 0.45;
+    v.imps = 2000 + Math.floor(r() * 400); v.clicks = Math.round(v.imps * ctr); v.result = "";
+  });
+  const sorted = [...variants].sort((a, b) => b.clicks / b.imps - a.clicks / a.imps);
+  sorted[0].result = "win"; sorted[sorted.length - 1].result = "lose";
+  const prompt = `${bySku(sorted[0].sku).name} | aspect=${sorted[0].aspect} | tag=${sorted[0].tag}`;
+  pairs.unshift({ prompt, chosen: sorted[0].caption, rejected: sorted[sorted.length - 1].caption }); pairs = pairs.slice(0, 200); store.set("pairs", pairs);
+  renderPairs(); renderVariants(); toast("A/B test done. Pair saved.");
+};
+function renderPairs(){
+  $("#pairCount").textContent = pairs.length + (pairs.length === 1 ? " pair" : " pairs");
+  $("#pairPreview").textContent = pairs.length ? pairs.slice(0, 3).map(p => JSON.stringify(p)).join("\n") : "No pairs yet. Generate variants, then run an A/B test.";
+}
+
+/* ---------- Paper 4: image studio ---------- */
+let uploaded = null;
+$("#imFile").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) { uploaded = null; return; }
+  const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { uploaded = im; toast("Photo loaded. Render to place it."); }; im.src = rd.result; }; rd.readAsDataURL(f);
+});
+$("#imProd").addEventListener("change", () => { $("#imCtx").value = defaultTag(forecast(bySku($("#imProd").value)).status) === "LOW_STOCK" ? "LOW_STOCK" : $("#imCtx").value; });
+function drawGarment(g, p, cx, cy, s){
+  g.save(); g.translate(cx, cy); g.scale(s, s);
+  g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 40; g.shadowOffsetY = 18;
+  g.fillStyle = p.color; g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 3;
+  if (p.cat === "kurta") {
+    g.beginPath(); g.moveTo(-70,-210); g.lineTo(-150,-175); g.lineTo(-215,-30); g.lineTo(-165,-5); g.lineTo(-120,-95); g.lineTo(-115,215); g.lineTo(115,215); g.lineTo(120,-95); g.lineTo(165,-5); g.lineTo(215,-30); g.lineTo(150,-175); g.lineTo(70,-210); g.quadraticCurveTo(0,-160,-70,-210); g.closePath(); g.fill(); g.shadowColor = "transparent"; g.stroke();
+    g.strokeStyle = p.trim; g.lineWidth = 6; g.beginPath(); g.moveTo(0,-178); g.lineTo(0,-80); g.stroke();
+    g.fillStyle = p.trim; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(10, -160 + i * 24, 4, 0, 7); g.fill(); }
+    g.fillRect(-115, 200, 230, 10);
+  } else {
+    const layers = p.cat === "dupatta" ? 3 : 4;
+    for (let i = layers - 1; i >= 0; i--) {
+      const y = -150 + i * 34; g.fillStyle = p.color; g.beginPath(); g.roundRect(-190, y, 380, 230 - i * 6, 10); g.fill();
+      if (i === 0) g.shadowColor = "transparent"; g.stroke();
+      g.fillStyle = p.trim; g.fillRect(-190, y + 16, 380, p.cat === "saree" ? 16 : 9); g.fillRect(-190, y + 40, 380, 4);
+    }
+    if (p.cat === "dupatta") { g.fillStyle = p.trim; g.globalAlpha = .55; for (let x = -160; x < 180; x += 46) for (let y = -60; y < 80; y += 46) { g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); } g.globalAlpha = 1; }
+  }
+  g.restore();
+}
+const SCENES = {
+  FESTIVE: [
+    { name:"Marigold garland, diya glow", tags:["festive","warm"], bg:["#5A0F1E","#2A0710"], deco:"garland" },
+    { name:"Rangoli courtyard", tags:["festive","traditional"], bg:["#14325A","#0A1A33"], deco:"rangoli" },
+    { name:"Plain studio grey", tags:["neutral"], bg:["#C9CBD3","#A7AAB6"], deco:"floor" } ],
+  OVERSTOCK: [
+    { name:"Gold sale bands", tags:["sale","bold"], bg:["#1E2775","#0F1440"], deco:"bands" },
+    { name:"Bundle offer burst", tags:["sale","bold"], bg:["#7A1E10","#3A0C06"], deco:"burst" },
+    { name:"Plain studio grey", tags:["neutral"], bg:["#C9CBD3","#A7AAB6"], deco:"floor" } ],
+  LOW_STOCK: [
+    { name:"Quiet gold frame", tags:["scarcity","premium"], bg:["#F2ECDE","#DCCFB1"], deco:"frame" },
+    { name:"Evening spotlight", tags:["scarcity","premium"], bg:["#232845","#0D0F1E"], deco:"spot" },
+    { name:"Loud sale bands", tags:["sale","bold"], bg:["#1E2775","#0F1440"], deco:"bands" } ],
+  EVERYDAY: [
+    { name:"Soft daylight studio", tags:["everyday","clean"], bg:["#E9EEF2","#C7D2DB"], deco:"floor" },
+    { name:"Backwater dawn", tags:["everyday","kerala"], bg:["#F3C892","#5C8FA6"], deco:"water" },
+    { name:"Festive garland", tags:["festive","warm"], bg:["#5A0F1E","#2A0710"], deco:"garland" } ]
+};
+const CTX_TAGS = { FESTIVE:["festive"], OVERSTOCK:["sale"], LOW_STOCK:["scarcity"], EVERYDAY:["everyday"] };
+function drawScene(g, sc, ctx, W){
+  const gr = g.createLinearGradient(0, 0, 0, W); gr.addColorStop(0, sc.bg[0]); gr.addColorStop(1, sc.bg[1]); g.fillStyle = gr; g.fillRect(0, 0, W, W);
+  const d = sc.deco;
+  if (d === "garland") { for (let k = 0; k < 2; k++) { for (let i = 0; i <= 28; i++) { const x = i / 28 * W, y = 40 + k * 46 + Math.sin(i / 28 * Math.PI) * 90; g.fillStyle = i % 2 ? "#F5A623" : "#F7D046"; g.beginPath(); g.arc(x, y, 15, 0, 7); g.fill(); } }
+    for (const x of [140, 360, 720, 940]) { const rg = g.createRadialGradient(x, W - 70, 2, x, W - 70, 70); rg.addColorStop(0, "rgba(255,200,90,.9)"); rg.addColorStop(1, "rgba(255,200,90,0)"); g.fillStyle = rg; g.fillRect(x - 70, W - 140, 140, 140); g.fillStyle = "#8A4B1C"; g.beginPath(); g.ellipse(x, W - 50, 26, 10, 0, 0, 7); g.fill(); } }
+  if (d === "rangoli") { g.save(); g.translate(W / 2, W - 120); for (let r = 6; r > 0; r--) { g.fillStyle = ["#E94E77","#F7D046","#3AA3A0","#F28C28","#FFFFFF","#7D5BA6"][r - 1]; g.beginPath(); for (let a = 0; a < 16; a++) { const ang = a / 16 * Math.PI * 2, rr = r * 34 * (a % 2 ? .78 : 1); g.lineTo(Math.cos(ang) * rr * 1.6, Math.sin(ang) * rr * .5); } g.fill(); } g.restore(); }
+  if (d === "floor") { g.fillStyle = "rgba(0,0,0,.12)"; g.beginPath(); g.ellipse(W / 2, W - 150, 330, 50, 0, 0, 7); g.fill(); }
+  if (d === "bands") { g.save(); g.rotate(-0.35); g.fillStyle = "#E2B24F"; for (let i = -2; i < 6; i++) g.fillRect(-200, i * 240, W + 600, 60); g.restore(); g.fillStyle = "#E2B24F"; g.beginPath(); g.arc(W - 150, 150, 105, 0, 7); g.fill(); g.fillStyle = "#1E2775"; g.font = "700 46px 'Bricolage Grotesque', sans-serif"; g.textAlign = "center"; g.fillText("UP TO", W - 150, 140); g.fillText("20% OFF", W - 150, 190); }
+  if (d === "burst") { g.save(); g.translate(W / 2, W / 2); for (let i = 0; i < 24; i++) { g.rotate(Math.PI / 12); g.fillStyle = i % 2 ? "rgba(255,190,80,.22)" : "rgba(255,190,80,.08)"; g.beginPath(); g.moveTo(0, 0); g.lineTo(900, -120); g.lineTo(900, 120); g.fill(); } g.restore(); g.fillStyle = "#FFD27A"; g.font = "700 54px 'Bricolage Grotesque', sans-serif"; g.textAlign = "center"; g.fillText("BUY 2, SAVE MORE", W / 2, 110); }
+  if (d === "frame") { g.strokeStyle = "#B8892A"; g.lineWidth = 6; g.strokeRect(50, 50, W - 100, W - 100); g.lineWidth = 2; g.strokeRect(68, 68, W - 136, W - 136); g.fillStyle = "#6E5014"; g.font = "600 40px 'Bricolage Grotesque', sans-serif"; g.textAlign = "center"; g.fillText("Last few pieces", W / 2, W - 100); }
+  if (d === "spot") { const rg = g.createRadialGradient(W / 2, W / 2, 30, W / 2, W / 2, 520); rg.addColorStop(0, "rgba(255,236,190,.55)"); rg.addColorStop(1, "rgba(255,236,190,0)"); g.fillStyle = rg; g.fillRect(0, 0, W, W); g.fillStyle = "#E2B24F"; g.font = "600 40px 'Bricolage Grotesque', sans-serif"; g.textAlign = "center"; g.fillText("Few left", W / 2, W - 80); }
+  if (d === "water") { g.fillStyle = "rgba(255,240,200,.85)"; g.beginPath(); g.arc(W * .72, W * .42, 70, 0, 7); g.fill(); g.fillStyle = "#3F6E80"; g.fillRect(0, W * .62, W, W * .38); g.fillStyle = "#1F3B2C"; for (let i = 0; i < 5; i++) { const x = 60 + i * 50; g.fillRect(x, W * .3, 8, W * .32); g.beginPath(); g.ellipse(x + 4, W * .3, 60, 16, -0.4 + i * .2, 0, 7); g.fill(); } }
+}
+function lum(r, g2, b){ return 0.2126 * r + 0.7152 * g2 + 0.0722 * b; }
+function scoreCanvas(cv, sc, ctx){
+  const g = cv.getContext("2d"), W = cv.width, data = g.getImageData(0, 0, W, W).data;
+  let inL = 0, inN = 0, outL = 0, outN = 0, sat = 0;
+  for (let y = 0; y < W; y += 6) for (let x = 0; x < W; x += 6) {
+    const i = (y * W + x) * 4, L = lum(data[i], data[i + 1], data[i + 2]);
+    const mx = Math.max(data[i], data[i + 1], data[i + 2]), mn = Math.min(data[i], data[i + 1], data[i + 2]); sat += (mx - mn) / 255;
+    const dx = (x - W / 2) / W, dy = (y - W * .54) / W;
+    if (Math.abs(dx) < .14 && Math.abs(dy) < .14) { inL += L; inN++; } else if (Math.abs(dx) > .3 || Math.abs(dy) > .3) { outL += L; outN++; }
+  }
+  const contrast = Math.min(1, Math.abs(inL / inN - outL / outN) / 120);
+  const colour = Math.min(1, sat / (W / 6) / (W / 6) * 2.4);
+  const aesthetic = 0.65 * contrast + 0.35 * colour;
+  const relevance = sc.tags.some(t => CTX_TAGS[ctx].includes(t)) ? 0.86 + (sc.tags.length > 1 ? 0.06 : 0) : 0.32;
+  return { relevance, aesthetic, total: 0.55 * relevance + 0.45 * aesthetic };
+}
+$("#imGen").onclick = () => {
+  const p = bySku($("#imProd").value), ctx = $("#imCtx").value, W = 1080;
+  const results = SCENES[ctx].map(sc => {
+    const cv = document.createElement("canvas"); cv.width = cv.height = W; const g = cv.getContext("2d");
+    drawScene(g, sc, ctx, W);
+    if (uploaded) { const s = Math.min(560 / uploaded.width, 560 / uploaded.height); g.save(); g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 40; g.shadowOffsetY = 18; g.drawImage(uploaded, W / 2 - uploaded.width * s / 2, W * .54 - uploaded.height * s / 2, uploaded.width * s, uploaded.height * s); g.restore(); }
+    else drawGarment(g, p, W / 2, W * .56, 1.45);
+    g.fillStyle = "rgba(0,0,0,.45)"; g.fillRect(0, W - 64, W, 64); g.fillStyle = "#fff"; g.font = "600 30px 'Instrument Sans', sans-serif"; g.textAlign = "left"; g.fillText(`${p.name} · ${inr(p.price)}`, 36, W - 22); g.textAlign = "right"; g.fillText("Thrissur Weaves", W - 36, W - 22);
+    return { sc, cv, score: scoreCanvas(cv, sc, ctx) };
+  });
+  const best = results.reduce((a, b) => b.score.total > a.score.total ? b : a);
+  const out = $("#imOut"); out.innerHTML = "";
+  results.forEach((r, i) => {
+    const card = document.createElement("div"); card.className = "panel imgcard" + (r === best ? " best" : "");
+    const bar = (l, v) => `<div class="scoreline"><span>${l}</span><div class="bar"><i style="width:${(v * 100).toFixed(0)}%"></i></div><span>${v.toFixed(2)}</span></div>`;
+    card.innerHTML = `<div class="row" style="justify-content:space-between"><b>${esc(r.sc.name)}</b>${r === best ? `<span class="chip overstock">Best</span>` : ""}</div>`;
+    card.append(r.cv);
+    const info = document.createElement("div"); info.className = "grid"; info.style.gap = "6px";
+    info.innerHTML = bar("Relevance", r.score.relevance) + bar("Aesthetic", r.score.aesthetic) + bar("Total", r.score.total) +
+      `<button class="btn small" ${r === best ? "" : ""}>Send to approvals</button>`;
+    info.querySelector("button").onclick = () => {
+      const small = document.createElement("canvas"); small.width = small.height = 240; small.getContext("2d").drawImage(r.cv, 0, 0, 240, 240);
+      addDraft({ sku: p.sku, tag: ctx, caption: `${r.sc.name} image for ${p.name}`, image: small.toDataURL("image/jpeg", .75), source: "Image studio" }); toast("Image sent to approvals");
+    };
+    card.append(info); out.append(card);
+  });
+};
+
+/* ---------- Paper 5: RedQueen scheduler ---------- */
+let simSeed = 7;
+function simulate(q, s, b, seed){
+  const r = rng(seed), mins = 72 * 60, k = Math.sqrt(q / s) * b;
+  const comp = new Uint8Array(mins);
+  for (let t = 0; t < mins; t++) { const h = Math.floor(t / 60) % 24; const lam = 3 * (h >= 18 && h < 22 ? 2.4 : h >= 0 && h < 7 ? 0.15 : 1); comp[t] = r() < lam / 60 ? 1 : 0; }
+  const awake = t => { const h = Math.floor(t / 60) % 24; return h >= 7 && h < 23; };
+  let rr = 0, rq = [], rqPosts = [], dayCount = 0;
+  for (let t = 0; t < mins; t++) {
+    if (t % 1440 === 0) dayCount = 0;
+    if (comp[t]) rr++;
+    const u = k * rr; // posts per hour
+    if (awake(t) && dayCount < 4 && rr > 0 && r() < u / 60) { rr = 0; rqPosts.push(t); dayCount++; }
+    rq.push(rr);
+  }
+  const perDay = Math.max(1, Math.round(rqPosts.length / 3));
+  const times = { 1:[19], 2:[10,19], 3:[10,14,19], 4:[9,12,16,19] }[Math.min(4, perDay)];
+  let rf = 0, fx = [], fxPosts = [];
+  for (let t = 0; t < mins; t++) { if (comp[t]) rf++; const h = (t / 60) % 24; if (times.some(T => Math.abs(h - T) < 1 / 120)) { rf = 0; fxPosts.push(t); } fx.push(rf); }
+  const stat = arr => { let sum = 0, top = 0, n = 0; arr.forEach((v, t) => { if (awake(t)) { sum += v; n++; if (v <= 2) top++; } }); return { mean: sum / n, top: top / n }; };
+  return { rq, fx, rqPosts, fxPosts, rqS: stat(rq), fxS: stat(fx), comp, finalRank: rr };
+}
+let lastSim = null;
+function runSim(){
+  const q = +$("#sq").value, s = +$("#ss").value, b = +$("#sb").value;
+  $("#sqv").textContent = q.toFixed(1); $("#ssv").textContent = s.toFixed(1);
+  const sim = simulate(q, s, b, simSeed); lastSim = { ...sim, q, s, b };
+  const W = 760, H = 260, L = 34, R = 10, T = 12, B = 30, mins = 72 * 60;
+  const step = 10, max = Math.max(8, ...sim.rq.filter((_, i) => i % step === 0), ...sim.fx.filter((_, i) => i % step === 0));
+  const X = t => L + t / mins * (W - L - R), Y = v => T + (1 - v / max) * (H - T - B);
+  const path = arr => arr.map((v, t) => t % step ? "" : `${t ? "L" : "M"}${X(t).toFixed(1)},${Y(v).toFixed(1)}`).join("");
+  let svg = "";
+  for (let d = 0; d < 3; d++) { svg += `<rect x="${X(d * 1440 + 23 * 60 - (d ? 0 : 0))}" y="${T}" width="${Math.max(0, X(d * 1440 + 1440 + 7 * 60) - X(d * 1440 + 23 * 60))}" height="${H - T - B}" fill="var(--surface-2)"/>`; }
+  svg += `<rect x="${X(0)}" y="${T}" width="${X(7 * 60) - X(0)}" height="${H - T - B}" fill="var(--surface-2)"/>`;
+  const ticks = []; for (let v = 0; v <= max; v += max > 16 ? 4 : 2) ticks.push(v);
+  ticks.forEach(v => svg += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`);
+  for (let h = 0; h <= 72; h += 12) svg += `<text x="${X(h * 60)}" y="${H - 10}" text-anchor="middle">${h % 24 === 0 ? "Day " + (h / 24 + 1) : (h % 24) + ":00"}</text>`;
+  svg += `<path d="${path(sim.fx)}" fill="none" stroke="var(--muted)" stroke-width="1.5"/>`;
+  svg += `<path d="${path(sim.rq)}" fill="none" stroke="var(--gold)" stroke-width="2"/>`;
+  sim.rqPosts.forEach(t => svg += `<circle cx="${X(t)}" cy="${Y(0)}" r="3.5" fill="var(--gold)"/>`);
+  sim.fxPosts.forEach(t => svg += `<rect x="${X(t) - 3}" y="${Y(0) + 5}" width="6" height="6" fill="var(--muted)"/>`);
+  $("#simChart").innerHTML = svg;
+  const better = (sim.fxS.mean - sim.rqS.mean) / sim.fxS.mean * 100;
+  $("#simStats").innerHTML = `
+    <div class="kpi"><div class="v" style="color:var(--gold)">${sim.rqS.mean.toFixed(1)}</div><div class="l">RedQueen average rank (${sim.rqPosts.length} posts)</div></div>
+    <div class="kpi"><div class="v">${sim.fxS.mean.toFixed(1)}</div><div class="l">Fixed calendar average rank (${sim.fxPosts.length} posts)</div></div>
+    <div class="kpi"><div class="v" style="color:${better >= 0 ? "var(--ok)" : "var(--risk)"}">${(sim.rqS.top * 100).toFixed(0)}% vs ${(sim.fxS.top * 100).toFixed(0)}%</div><div class="l">Waking time in the top 3 of the feed</div></div>`;
+}
+function suggestTime(sku){
+  const p = bySku(sku), st = p ? forecast(p).status : "healthy";
+  const b = st === "overstock" ? 1.2 : st === "at_risk" || st === "watch" ? 0.6 : 1;
+  const q = +$("#sq").value, s = +$("#ss").value, rank = Math.max(1, lastSim?.finalRank ?? 3);
+  const u = Math.sqrt(q / s) * rank * b; // per hour
+  const wait = -Math.log(1 - Math.random()) / u;
+  const t = new Date(Date.now() + wait * 3600e3);
+  if (t.getHours() >= 23 || t.getHours() < 7) { if (t.getHours() >= 23) t.setDate(t.getDate() + 1); t.setHours(7, 15 + Math.floor(Math.random() * 30), 0, 0); }
+  return { label: t.toLocaleString("en-IN", { weekday: "short", hour: "numeric", minute: "2-digit" }) };
+}
+["#sq", "#ss", "#sb"].forEach(id => $(id).addEventListener("input", runSim));
+$("#simRun").onclick = () => { simSeed = Math.floor(Math.random() * 1e6); runSim(); };
+
+/* ---------- routing ---------- */
+const VIEWS = ["overview", "agent", "copy", "image", "schedule", "approvals"];
+function route(){
+  const v = VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "overview";
+  document.querySelectorAll("[data-v]").forEach(s => s.hidden = s.id !== "view-" + v);
+  document.querySelectorAll(".nav a").forEach(a => a.dataset.view === v ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  if (v === "image" && !$("#imOut").children.length) $("#imGen").click();
+  if (v === "schedule") runSim();
+}
+addEventListener("hashchange", route);
+
+/* ---------- boot ---------- */
+renderOverview(); syncSelectors(); onCopyProduct(); renderDrafts(); renderPairs(); renderVariants();
+$("#imProd").value = "KUR-LIN-M";
+route(); runSim();
+(async () => {
+  try {
+    sample = await window.claude?.use?.("sample");
+    if (sample) { const lim = await sample.limits().catch(() => null); toolsOK = !!lim?.tools; setAI("claude"); }
+    else setAI("offline");
+  } catch { setAI("offline"); }
+})();
+setTimeout(() => { if (aiMode === "connecting") setAI("offline"); }, 11000);
+</script>
+
+</body></html>
